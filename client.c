@@ -119,17 +119,22 @@ main(int argc, char **argv)
 				struct PDU contentSearchResponse;
 				char buf[101];
 				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
+				strncpy(contentSearchResponse.data, &buf[1], data);
 				contentSearchResponse.type = buf[0];
 				char contentPeer[11];
 				char contentAddress[100];
-				
 				if (contentSearchResponse.type == 'E'){
 					printf("No such content available.");
 				}else{
-					strncpy(contentSearchResponse.data, &buf[11], data);
+					strncpy(contentPeer, &contentSearchResponse.data[0], 11);
+					strcpy(contentAddress, &contentSearchResponse.data[11]);
+					contentDownload.type = 'D';
+					contentDownload.data[sizeof(contentPeer)+sizeof(contentAddress)] = 0;
+					strncpy(contentDownload.data, contentPeer, sizeof(contentPeer));
+					int addressIndex = strlen(contentDownload.data);
+					strcpy(contentDownload.data + strlen(contentAddress), contentAddress);
 					break;
 				}
-				contentDownload.type = 'D';
 				break;
 			case '3':
 				contentListing.type = 'O';
