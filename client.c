@@ -120,6 +120,9 @@ main(int argc, char **argv)
 				char buf[101];
 				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
 				contentSearchResponse.type = buf[0];
+				char contentPeer[11];
+				char contentAddress[100];
+				
 				if (contentSearchResponse.type == 'E'){
 					printf("No such content available.");
 				}else{
