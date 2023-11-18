@@ -1,16 +1,18 @@
 /* time_client.c - main */
 
-#include <sys/types.h>
+
 
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/socket.h>                                                                            
-#include <netinet/in.h>
-#include <arpa/inet.h>
+// #include <sys/socket.h>
+#include <winsock2.h>                                                                            
+// #include <netinet/in.h>
+#include <sys/types.h>
+// #include <arpa/inet.h>
                                                                                 
-#include <netdb.h>
+// #include <netdb.h>
 
 #define	BUFSIZE 64
 
@@ -86,6 +88,8 @@ main(int argc, char **argv)
 		struct PDU contentRegistration;
 		struct PDU contentSearch;
 		struct PDU contentDownload;
+		struct PDU contentListing;
+		struct PDU contentDeregistration;
 		// printf("Please enter your name: \n")
 		printf("1.Content Registration\n2.Content Download\n4.Content Listing\n5.Content Deregistration\n");
 		// peerBytes = read(0, buf, 10);
@@ -125,28 +129,26 @@ main(int argc, char **argv)
 				contentDownload.type = 'D';
 				break;
 			case '3':
-				struct PDU contentListing;
 				contentListing.type = 'O';
 				write(udp_s, &contentListing, sizeof(contentListing));
 				struct PDU contentListingResponse;
-				char buf[101];
-				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
-				contentListingResponse.type = buf[0];
+				char buf1[101];
+				int data1 = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
+				contentListingResponse.type = buf1[0];
 				if (contentListingResponse.type != 'O'){
 					printf("Error");
 				}else{
-					strncpy(contentListingResponse.data, &buf[1], data);
+					strncpy(contentListingResponse.data, &buf1[1], data1);
 					printf(contentListingResponse.data); //Gotta change this, let this be for now
 					break;
 				}
 			case '4':
-				struct PDU contentDeregistration;
 				contentDeregistration.type = 'T';
 				write(udp_s, &contentDeregistration, sizeof(contentDeregistration));
 				struct PDU contentDeregistrationResponse;
-				char buf[101];
-				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
-				contentDeregistrationResponse.type = buf[0];
+				char buf2[101];
+				int data2 = read(udp_s, buf2, sizeof(buf2)); //Should return peer and address to retrieve content
+				contentDeregistrationResponse.type = buf2[0];
 				if (contentDeregistrationResponse.type != 'A'){
 					printf("Error");
 				}else{
