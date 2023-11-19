@@ -55,9 +55,9 @@ main(int argc, char **argv)
 
 	memset(&reg_addr, 0, sizeof(reg_addr));
         reg_addr.sin_family = AF_INET;                                                                
-        reg_addr.sin_port = htons(0);;
+        reg_addr.sin_port = htons(port);
 		reg_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-		// bind(s, (struct sockaddr*));
+		// bind(tcp_s, (struct sockaddr*)&reg_addr, sizeof(reg_addr));
                                                                                         
     /* Map host name to IP address, allowing for dotted decimal */
         if ( phe = gethostbyname(host) ){
@@ -73,12 +73,16 @@ main(int argc, char **argv)
 
 	/* Allocate a TCP socket */
         int tcp_s = socket(AF_INET, SOCK_STREAM, 0);
+		bind(tcp_s, (struct sockaddr*)&reg_addr, sizeof(reg_addr));
         if (tcp_s < 0)
 		fprintf(stderr, "Can't create socket \n");
                                                                                 
     /* Connect the socket */
-        if (connect(s, (struct sockaddr *)&reg_addr, sizeof(reg_addr)) < 0)
+        if (connect(udp_s, (struct sockaddr *)&reg_addr, sizeof(reg_addr)) < 0)
 		fprintf(stderr, "Can't connect to %s %s \n", host, "Time");
+
+		int alen = sizeof(struct sockaddr_in);
+		getsockname(udp_s, (struct sockaddr*)&reg_addr, &alen);
 
 	// while(1){
 		int peerBytes;
@@ -91,7 +95,7 @@ main(int argc, char **argv)
 		struct PDU contentListing;
 		struct PDU contentDeregistration;
 		// printf("Please enter your name: \n")
-		printf("1.Content Registration\n2.Content Download\n4.Content Listing\n5.Content Deregistration\n");
+		printf("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n");
 		// peerBytes = read(0, buf, 10);
 		optionBytes = read(0, buf, sizeof(buf));
 		buf[optionBytes] = '\0';
@@ -99,21 +103,29 @@ main(int argc, char **argv)
 		switch(option){
 			case '1':
 				printf("Please enter your name: \n");
-				int peerBytes_1 = read(0, contentRegistration.data, 100);
+				int peerBytes_1 = read(0, contentRegistration.data, 10);
 				printf("Please enter your filename :\n");
-				int filenameSize = read(0, contentRegistration.data, 100);
+				int filenameSize = read(0, contentRegistration.data, 10); //Needs to be changed
 				contentRegistration.type = 'R';
-				contentRegistration.data[peerBytes_1+filenameSize-1] = 0;
+				contentRegistration.data[peerBytes_1+filenameSize-1] = 0; //Needs to be changed
 				write(udp_s, &contentRegistration, sizeof(contentRegistration));
+
+				struct PDU contentRegistrationResponse;
+				if(contentRegistrationResponse.type == 'E'){
+					printf("Please enter a different name. A user already exists under that name");
+				}else{
+					printf("%c", contentRegistration.type);
+					printf("Content successfully registered");
+				}
 				break;
 			case '2':
 				printf("Please enter your name: \n");
-				int peerBytes = read(0, contentSearch.data, 100);
+				int peerBytes = read(0, contentSearch.data, 100); 
 				printf("Please enter the name of the content you are looking for:\n");
-				int contentName = read(0, contentSearch.data, 100);
+				int contentName = read(0, contentSearch.data, 100); //Needs to be changed
 				printf("\nHello");
 				contentSearch.type = 'S';
-				contentSearch.data[peerBytes+contentName] = 0;
+				contentSearch.data[peerBytes+contentName] = 0; //Needs to be changed
 				// contentSearch.data[peerBytes] = 0;
 				write(udp_s, &contentSearch, sizeof(contentSearch));
 				struct PDU contentSearchResponse;
@@ -133,6 +145,7 @@ main(int argc, char **argv)
 					strncpy(contentDownload.data, contentPeer, sizeof(contentPeer));
 					int addressIndex = strlen(contentDownload.data);
 					strcpy(contentDownload.data + strlen(contentAddress), contentAddress);
+					write(tcp_s, &contentDownload, sizeof(contentDownload));
 					break;
 				}
 				break;
