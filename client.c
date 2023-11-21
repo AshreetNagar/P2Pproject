@@ -27,6 +27,49 @@ struct PDU{
  * main - UDP client for TIME service that prints the resulting time
  *------------------------------------------------------------------------
  */
+
+void handleUserInput(char option, int socket){
+        struct PDU contentRegistration;
+		struct PDU contentSearch;
+		struct PDU contentDownload;
+		struct PDU contentListing;
+		struct PDU contentDeregistration;
+    if (option == '1'){
+        printf("Please enter your name: \n");
+        int peerBytes_1 = read(0, contentRegistration.data, 10);
+        printf("Please enter your filename :\n");
+        int filenameSize = read(0, contentRegistration.data, 10); //Needs to be changed
+        contentRegistration.type = 'R';
+        contentRegistration.data[peerBytes_1+filenameSize-1] = 0; //Needs to be changed
+        sendto(socket, &contentRegistration, sizeof(contentRegistration));
+
+        struct PDU contentRegistrationResponse;
+        if(contentRegistrationResponse.type == 'E'){
+            printf("Please enter a different name. A user already exists under that name");
+        }else{
+            printf("%c", contentRegistration.type);
+            printf("Content successfully registered");
+        }
+    }
+
+    if (option == '2'){
+        return 0;
+    }
+
+    if (option == '3'){
+        return 0;
+    }
+
+    if (option == '4'){
+        return 0;
+    }
+    
+    while(1)    {
+        break;
+    }
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -89,99 +132,13 @@ main(int argc, char **argv)
 		int optionBytes;
 		char buf[100];
 		char option;
-		struct PDU contentRegistration;
-		struct PDU contentSearch;
-		struct PDU contentDownload;
-		struct PDU contentListing;
-		struct PDU contentDeregistration;
 		// printf("Please enter your name: \n")
 		printf("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n");
 		// peerBytes = read(0, buf, 10);
 		optionBytes = read(0, buf, sizeof(buf));
 		buf[optionBytes] = '\0';
 		option = buf[0];
-		switch(option){
-			case '1':
-				printf("Please enter your name: \n");
-				int peerBytes_1 = read(0, contentRegistration.data, 10);
-				printf("Please enter your filename :\n");
-				int filenameSize = read(0, contentRegistration.data, 10); //Needs to be changed
-				contentRegistration.type = 'R';
-				contentRegistration.data[peerBytes_1+filenameSize-1] = 0; //Needs to be changed
-				write(udp_s, &contentRegistration, sizeof(contentRegistration));
-
-				struct PDU contentRegistrationResponse;
-				if(contentRegistrationResponse.type == 'E'){
-					printf("Please enter a different name. A user already exists under that name");
-				}else{
-					printf("%c", contentRegistration.type);
-					printf("Content successfully registered");
-				}
-				break;
-			case '2':
-				printf("Please enter your name: \n");
-				int peerBytes = read(0, contentSearch.data, 100); 
-				printf("Please enter the name of the content you are looking for:\n");
-				int contentName = read(0, contentSearch.data, 100); //Needs to be changed
-				printf("\nHello");
-				contentSearch.type = 'S';
-				contentSearch.data[peerBytes+contentName] = 0; //Needs to be changed
-				// contentSearch.data[peerBytes] = 0;
-				write(udp_s, &contentSearch, sizeof(contentSearch));
-				struct PDU contentSearchResponse;
-				char buf[101];
-				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
-				strncpy(contentSearchResponse.data, &buf[1], data);
-				contentSearchResponse.type = buf[0];
-				for(int i = 0; i <= sizeof(contentSearchResponse.data); i++){
-					printf("%c", contentRegistrationResponse.data[i]);
-				}
-				char contentPeer[11];
-				char contentAddress[100];
-				if (contentSearchResponse.type == 'E'){
-					printf("No such content available.");
-				}else{
-					strncpy(contentPeer, &contentSearchResponse.data[0], 11);
-					strcpy(contentAddress, &contentSearchResponse.data[11]);
-					contentDownload.type = 'D';
-					contentDownload.data[sizeof(contentPeer)+sizeof(contentAddress)] = 0;
-					strncpy(contentDownload.data, contentPeer, sizeof(contentPeer));
-					int addressIndex = strlen(contentDownload.data);
-					strcpy(contentDownload.data + strlen(contentAddress), contentAddress);
-					write(tcp_s, &contentDownload, sizeof(contentDownload));
-					break;
-				}
-				break;
-			case '3':
-				contentListing.type = 'O';
-				write(udp_s, &contentListing, sizeof(contentListing));
-				struct PDU contentListingResponse;
-				char buf1[101];
-				int data1 = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
-				contentListingResponse.type = buf1[0];
-				if (contentListingResponse.type != 'O'){
-					printf("Error");
-				}else{
-					strncpy(contentListingResponse.data, &buf1[1], data1);
-					printf(contentListingResponse.data); //Gotta change this, let this be for now
-					break;
-				}
-			case '4':
-				contentDeregistration.type = 'T';
-				write(udp_s, &contentDeregistration, sizeof(contentDeregistration));
-				struct PDU contentDeregistrationResponse;
-				char buf2[101];
-				int data2 = read(udp_s, buf2, sizeof(buf2)); //Should return peer and address to retrieve content
-				contentDeregistrationResponse.type = buf2[0];
-				if (contentDeregistrationResponse.type != 'A'){
-					printf("Error");
-				}else{
-					printf("File successfully deregistered");
-					break;
-				}
-			default:
-				printf("Error");
-		}
+        handleUserInput(option, udp_s);
 		// write(1, buf, optionBytes);
 
 
@@ -196,3 +153,86 @@ main(int argc, char **argv)
 	// write(1, now, n);
 	exit(0);
 }
+
+// switch(option){
+// 			case '1':
+// 				printf("Please enter your name: \n");
+// 				int peerBytes_1 = read(0, contentRegistration.data, 10);
+// 				printf("Please enter your filename :\n");
+// 				int filenameSize = read(0, contentRegistration.data, 10); //Needs to be changed
+// 				contentRegistration.type = 'R';
+// 				contentRegistration.data[peerBytes_1+filenameSize-1] = 0; //Needs to be changed
+// 				write(udp_s, &contentRegistration, sizeof(contentRegistration));
+
+// 				struct PDU contentRegistrationResponse;
+// 				if(contentRegistrationResponse.type == 'E'){
+// 					printf("Please enter a different name. A user already exists under that name");
+// 				}else{
+// 					printf("%c", contentRegistration.type);
+// 					printf("Content successfully registered");
+// 				}
+// 				break;
+// 			case '2':
+// 				printf("Please enter your name: \n");
+// 				int peerBytes = read(0, contentSearch.data, 100); 
+// 				printf("Please enter the name of the content you are looking for:\n");
+// 				int contentName = read(0, contentSearch.data, 100); //Needs to be changed
+// 				printf("\nHello");
+// 				contentSearch.type = 'S';
+// 				contentSearch.data[peerBytes+contentName] = 0; //Needs to be changed
+// 				// contentSearch.data[peerBytes] = 0;
+// 				write(udp_s, &contentSearch, sizeof(contentSearch));
+// 				struct PDU contentSearchResponse;
+// 				char buf[101];
+// 				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
+// 				strncpy(contentSearchResponse.data, &buf[1], data);
+// 				contentSearchResponse.type = buf[0];
+// 				for(int i = 0; i <= sizeof(contentSearchResponse.data); i++){
+// 					printf("%c", contentRegistrationResponse.data[i]);
+// 				}
+// 				char contentPeer[11];
+// 				char contentAddress[100];
+// 				if (contentSearchResponse.type == 'E'){
+// 					printf("No such content available.");
+// 				}else{
+// 					strncpy(contentPeer, &contentSearchResponse.data[0], 11);
+// 					strcpy(contentAddress, &contentSearchResponse.data[11]);
+// 					contentDownload.type = 'D';
+// 					contentDownload.data[sizeof(contentPeer)+sizeof(contentAddress)] = 0;
+// 					strncpy(contentDownload.data, contentPeer, sizeof(contentPeer));
+// 					int addressIndex = strlen(contentDownload.data);
+// 					strcpy(contentDownload.data + strlen(contentAddress), contentAddress);
+// 					write(tcp_s, &contentDownload, sizeof(contentDownload));
+// 					break;
+// 				}
+// 				break;
+// 			case '3':
+// 				contentListing.type = 'O';
+// 				write(udp_s, &contentListing, sizeof(contentListing));
+// 				struct PDU contentListingResponse;
+// 				char buf1[101];
+// 				int data1 = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
+// 				contentListingResponse.type = buf1[0];
+// 				if (contentListingResponse.type != 'O'){
+// 					printf("Error");
+// 				}else{
+// 					strncpy(contentListingResponse.data, &buf1[1], data1);
+// 					printf(contentListingResponse.data); //Gotta change this, let this be for now
+// 					break;
+// 				}
+// 			case '4':
+// 				contentDeregistration.type = 'T';
+// 				write(udp_s, &contentDeregistration, sizeof(contentDeregistration));
+// 				struct PDU contentDeregistrationResponse;
+// 				char buf2[101];
+// 				int data2 = read(udp_s, buf2, sizeof(buf2)); //Should return peer and address to retrieve content
+// 				contentDeregistrationResponse.type = buf2[0];
+// 				if (contentDeregistrationResponse.type != 'A'){
+// 					printf("Error");
+// 				}else{
+// 					printf("File successfully deregistered");
+// 					break;
+// 				}
+// 			default:
+// 				printf("Error");
+// 		}
