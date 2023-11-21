@@ -133,6 +133,9 @@ main(int argc, char **argv)
 				int data = read(udp_s, buf, sizeof(buf)); //Should return peer and address to retrieve content
 				strncpy(contentSearchResponse.data, &buf[1], data);
 				contentSearchResponse.type = buf[0];
+				for(int i = 0; i <= sizeof(contentSearchResponse.data); i++){
+					printf("%c", contentRegistrationResponse.data[i]);
+				}
 				char contentPeer[11];
 				char contentAddress[100];
 				if (contentSearchResponse.type == 'E'){
