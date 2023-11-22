@@ -28,7 +28,7 @@ struct PDU{
  *------------------------------------------------------------------------
  */
 
-void handleUserInput(char option, int serverSocket, int clientSocket){
+void handleUserInput(char option, int serverSocket, int clientSocket, int address){
 		struct PDU contentRegistration;
         struct PDU contentSearch;
 		struct PDU contentDownload;
@@ -43,8 +43,15 @@ void handleUserInput(char option, int serverSocket, int clientSocket){
         printf("Please enter your filename :\n");
         int filename = read(0, contentRegistration.data + peer, 10);
         contentRegistration.data[peer + filename - 1] = '\0';
+        strncpy(contentRegistration.data, contentRegistration.data + 20, sizeof(address));
+        contentRegistration.data[sizeof(contentRegistration.data) - 1] = '\0'; 
         // handleRegisterContent(peer, filename);
         contentRegistration.type = 'R';
+        printf("%c\n", contentRegistration.type);
+        int i;
+        for(i = 0; i <= sizeof(contentRegistration.data)/sizeof(contentRegistration.data[0]); i++){
+            printf("%c\n", contentRegistration.data[i]);
+        }
         write(serverSocket, &contentRegistration, sizeof(contentRegistration));
 
         struct PDU contentRegistrationResponse;
@@ -173,7 +180,8 @@ main(int argc, char **argv)
 
 	memset(&reg_addr, 0, sizeof(reg_addr));
         reg_addr.sin_family = AF_INET;                                                                
-        reg_addr.sin_port = htons(port);
+        // reg_addr.sin_port = htons(port);
+        reg_addr.sin_port = htons(0);
 		reg_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 		// bind(tcp_s, (struct sockaddr*)&reg_addr, sizeof(reg_addr));
                                                                                         
@@ -200,7 +208,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "Can't connect to %s %s \n", host, "Time");
 
 		int alen = sizeof(struct sockaddr_in);
-		getsockname(udp_s, (struct sockaddr*)&reg_addr, &alen);
+		int peerAddress = getsockname(udp_s, (struct sockaddr*)&reg_addr, &alen); //Send during registration
 
 	// while(1){
 		int peerBytes;
@@ -213,7 +221,7 @@ main(int argc, char **argv)
 		optionBytes = read(0, buf, sizeof(buf));
 		buf[optionBytes] = '\0';
 		option = buf[0];
-        handleUserInput(option, udp_s, tcp_s);
+        handleUserInput(option, udp_s, tcp_s, peerAddress);
 		// write(1, buf, optionBytes);
 
 
