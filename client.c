@@ -28,7 +28,7 @@ struct PDU{
  *------------------------------------------------------------------------
  */
 
-void handleUserInput(char option, int socket){
+void handleUserInput(char option, int serverSocket, int clientSocket){
 		struct PDU contentRegistration;
         struct PDU contentSearch;
 		struct PDU contentDownload;
@@ -45,13 +45,15 @@ void handleUserInput(char option, int socket){
         contentRegistration.data[peer + filename - 1] = '\0';
         // handleRegisterContent(peer, filename);
         contentRegistration.type = 'R';
-        // sendto(socket, &contentRegistration, sizeof(contentRegistration));
+        write(serverSocket, &contentRegistration, sizeof(contentRegistration));
 
         struct PDU contentRegistrationResponse;
+        char RegistrationBuffer[101];
+        int response = read(serverSocket, RegistrationBuffer, sizeof(RegistrationBuffer));
         if(contentRegistrationResponse.type == 'E'){
             printf("Please enter a different name. A user already exists under that name");
         }else{
-            printf("%c", contentRegistration.type);
+            printf("%c", contentRegistrationResponse.type);
             printf("Content successfully registered");
         }
     }
@@ -67,32 +69,39 @@ void handleUserInput(char option, int socket){
 
         struct PDU contentSearchResponse;
         char SearchBuffer[101];
-        int data = recvfrom(udp_s, SearchBuffer, sizeof(SearchBuffer)); //Gotta put the socket in the parameters, udp_s is just a placeholder
-        strncpy(contentSearchResponse.data, &SearchBuffer[1], data);
+        int data = read(serverSocket, SearchBuffer, sizeof(SearchBuffer)); //Gotta put the socket in the parameters, udp_s is just a placeholder
         contentSearchResponse.type = SearchBuffer[0];
         char contentPeer[11];
-        char contentAddress[100];
+        char contentAddress[89];
         if (contentSearchResponse.type == 'E'){
             printf("No such content available.");
         }else{
-            strncpy(contentAddress, &contentSearchResponse.data[0], 11);
-            strcpy(contentAddress, &contentSearchResponse.data[11]);
+            strncpy(contentSearchResponse.data, &SearchBuffer[1], data);
+            contentSearchResponse.data[data - 1] = '\0';
+            // strncpy(contentPeer, &contentSearchResponse.data[0], 11);
+            strncpy(contentPeer, contentSearchResponse.data, 10);
+            contentPeer[10] = '\0';
+            // strcpy(contentAddress, &contentSearchResponse.data[11]);
+            strncpy(contentAddress, contentSearchResponse.data + 10, 88);
+            contentAddress[88] = '\0';
             contentDownload.type = 'D';
             contentDownload.data[sizeof(contentAddress) + sizeof(contentAddress) - 1] = '\0';
             strncpy(contentDownload.data, contentPeer, sizeof(contentPeer));
             int addressIndex = strlen(contentDownload.data);
             strcpy(contentDownload.data + strlen(contentAddress), contentAddress);
-            write(tcp_s, &contentDownload, sizeof(contentDownload)); //Gotta put TCP socket in the parameters, tcp_s is just a placeholder
+            for(int i = 0; i < sizeof(contentDownload.data)/sizeof(contentDownload.data[0]); i++){
+                printf("%c\n", contentDownload.data[i]);
+            }
+            write(clientSocket, &contentDownload, sizeof(contentDownload)); //Gotta put TCP socket in the parameters, tcp_s is just a placeholder
         }
-        return 0;
     }
 
     if (option == '3'){
         contentListing.type = 'O';
-        write(udp_s, &contentListing, sizeof(contentListing));
+        write(serverSocket, &contentListing, sizeof(contentListing));
         struct PDU contentListingResponse;
         char ListBuffer[101];
-        int list = read(udp_s, ListBuffer, sizeof(ListBuffer)); //Should return peer and address to retrieve content
+        int list = read(serverSocket, ListBuffer, sizeof(ListBuffer)); //Should return peer and address to retrieve content
         contentListingResponse.type = ListBuffer[0];
         if (contentListingResponse.type != 'O'){
             printf("Error");
@@ -104,10 +113,10 @@ void handleUserInput(char option, int socket){
 
     if (option == '4'){
         contentDeregistration.type = 'T';
-        write(udp_s, &contentDeregistration, sizeof(contentDeregistration));
+        write(serverSocket, &contentDeregistration, sizeof(contentDeregistration));
         struct PDU contentDeregistrationResponse;
         char DeregistrationBuffer[101];
-        int deregistration = read(udp_s, DeregistrationBuffer, sizeof(DeregistrationBuffer)); //Should return peer and address to retrieve content
+        int deregistration = read(serverSocket, DeregistrationBuffer, sizeof(DeregistrationBuffer)); //Should return peer and address to retrieve content
         contentDeregistrationResponse.type = DeregistrationBuffer[0];
         if (contentDeregistrationResponse.type != 'A'){
             printf("Error");
@@ -204,7 +213,7 @@ main(int argc, char **argv)
 		optionBytes = read(0, buf, sizeof(buf));
 		buf[optionBytes] = '\0';
 		option = buf[0];
-        handleUserInput(option, udp_s);
+        handleUserInput(option, udp_s, tcp_s);
 		// write(1, buf, optionBytes);
 
 
