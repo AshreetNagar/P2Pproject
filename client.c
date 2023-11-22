@@ -14,8 +14,8 @@
                                                                                 
 // #include <netdb.h>
 
+#define MAX_SOCKS 10
 #define	BUFSIZE 64
-
 #define	MSG		"Any Message \n"
 
 struct PDU{
@@ -34,8 +34,13 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
 		struct PDU contentDownload;
 		struct PDU contentListing;
 		struct PDU contentDeregistration;
-        // char peerBuffer[10];
-        // char fileBuffer[10];
+        // fd_set rfds, afds;
+        // FD_ZERO(&afds);
+        // FD_SET(clientSocket, &afds);
+        // FD_SET(0, &afds);
+        // memcpy(&rfds, &afds, sizeof(rfds));
+        // select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
+        
     if (option == '1'){
         printf("Please enter your name: \n");
         int peer = read(0, contentRegistration.data, 10);
@@ -209,6 +214,22 @@ main(int argc, char **argv)
 
 		int alen = sizeof(struct sockaddr_in);
 		int peerAddress = getsockname(udp_s, (struct sockaddr*)&reg_addr, &alen); //Send during registration
+
+        int sockets[MAX_SOCKS];
+        int max_sd, i;
+
+        for(i = 0; i < MAX_SOCKS; ++i){
+            if((sockets[i] = socket(AF_INET, SOCK_STREAM, 0) < 0)){
+                fprintf()
+            }
+        }
+
+        // fd_set rfds, afds;
+        // FD_ZERO(&afds);
+        // FD_SET(udp_s, &afds);
+        // FD_SET(0, &afds);
+        // memcpy(&rfds, &afds, sizeof(rfds));
+        // select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
 
 	// while(1){
 		int peerBytes;
