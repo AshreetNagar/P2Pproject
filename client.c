@@ -42,6 +42,7 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
         // select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
         
     if (option == '1'){
+        //1. Send peer and content name to index server with S-PDU
         printf("Please enter your name: \n");
         int peer = read(0, contentRegistration.data, 10);
         contentRegistration.data[peer - 1] = '\0';
@@ -59,6 +60,7 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
         }
         write(serverSocket, &contentRegistration, sizeof(contentRegistration));
 
+        //2. Receive E or A-PDU from index server to verify registration status
         struct PDU contentRegistrationResponse;
         char RegistrationBuffer[101];
         int response = read(serverSocket, RegistrationBuffer, sizeof(RegistrationBuffer));
@@ -71,10 +73,11 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
     }
 
     if (option == '2'){
+        //1. Send peer and content name to index server
         printf("Please enter your name: \n");
         int peer = read(0, contentSearch.data, 10);
         contentSearch.data[peer - 1] = '\0';
-        printf("Please enter your filename :\n");
+        printf("Please enter the content name you would like to download :\n");
         int filename = read(0, contentSearch.data + peer, 10);
         contentSearch.data[peer + filename - 1] = '\0';
         contentSearch.type = 'S';
@@ -85,18 +88,18 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
         int data = read(serverSocket, SearchBuffer, sizeof(SearchBuffer)); //Gotta put the socket in the parameters, udp_s is just a placeholder
         contentSearchResponse.type = SearchBuffer[0];
         char contentPeer[11];
-        char contentAddress[89];
+        char contentAddress[100];
         if (contentSearchResponse.type == 'E'){
             printf("No such content available.");
         }else{
             strncpy(contentSearchResponse.data, &SearchBuffer[1], data);
             contentSearchResponse.data[data - 1] = '\0';
             // strncpy(contentPeer, &contentSearchResponse.data[0], 11);
-            strncpy(contentPeer, contentSearchResponse.data, 10);
+            strncpy(contentPeer, contentSearchResponse.data[0], 11);
             contentPeer[10] = '\0';
             // strcpy(contentAddress, &contentSearchResponse.data[11]);
-            strncpy(contentAddress, contentSearchResponse.data + 10, 88);
-            contentAddress[88] = '\0';
+            strcpy(contentAddress, contentSearchResponse.data[11] + 10);
+            contentAddress[sizeof(contentAddress)] = '\0';
             contentDownload.type = 'D';
             contentDownload.data[sizeof(contentAddress) + sizeof(contentAddress) - 1] = '\0';
             strncpy(contentDownload.data, contentPeer, sizeof(contentPeer));
@@ -215,15 +218,16 @@ main(int argc, char **argv)
 
 		int alen = sizeof(struct sockaddr_in);
 		int peerAddress = getsockname(udp_s, (struct sockaddr*)&reg_addr, &alen); //Send during registration
+        listen(tcp_s, 5);
 
         int sockets[MAX_SOCKS];
         int max_sd, i;
 
-        for(i = 0; i < MAX_SOCKS; ++i){
-            if((sockets[i] = socket(AF_INET, SOCK_STREAM, 0) < 0)){
-                fprintf()
-            }
-        }
+        // for(i = 0; i < MAX_SOCKS; ++i){
+        //     if((sockets[i] = socket(AF_INET, SOCK_STREAM, 0) < 0)){
+        //         fprintf()
+        //     }
+        // }
 
         // fd_set rfds, afds;
         // FD_ZERO(&afds);
