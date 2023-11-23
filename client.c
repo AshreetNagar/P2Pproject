@@ -73,7 +73,7 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
     }
 
     if (option == '2'){
-        //1. Send peer and content name to index server
+        //1. Send peer and content name to index server using S-PDU
         printf("Please enter your name: \n");
         int peer = read(0, contentSearch.data, 10);
         contentSearch.data[peer - 1] = '\0';
@@ -83,6 +83,8 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
         contentSearch.type = 'S';
         printf("%c\n", contentSearch.type);
         write(serverSocket, &contentSearch, sizeof(contentSearch));
+        
+        //2. Parse address and port of content server from response S-PDU
         struct PDU contentSearchResponse;
         char SearchBuffer[101];
         int data = read(serverSocket, SearchBuffer, sizeof(SearchBuffer)); //Gotta put the socket in the parameters, udp_s is just a placeholder
@@ -108,7 +110,7 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
             for(int i = 0; i < sizeof(contentDownload.data)/sizeof(contentDownload.data[0]); i++){
                 printf("%c\n", contentDownload.data[i]);
             }
-            write(clientSocket, &contentDownload, sizeof(contentDownload)); //Gotta put TCP socket in the parameters, tcp_s is just a placeholder
+            write(clientSocket, &contentDownload, sizeof(contentDownload)); //Gotta put TCP socket in the parameters, clientSocket is just a placeholder
         }
     }
 
