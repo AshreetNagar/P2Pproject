@@ -78,7 +78,8 @@ void handleUserInput(char option, int serverSocket, int clientSocket, int addres
         int filename = read(0, contentSearch.data + peer, 10);
         contentSearch.data[peer + filename - 1] = '\0';
         contentSearch.type = 'S';
-
+        printf("%c\n", contentSearch.type);
+        write(serverSocket, &contentSearch, sizeof(contentSearch));
         struct PDU contentSearchResponse;
         char SearchBuffer[101];
         int data = read(serverSocket, SearchBuffer, sizeof(SearchBuffer)); //Gotta put the socket in the parameters, udp_s is just a placeholder
