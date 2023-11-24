@@ -10,6 +10,12 @@
 #define TCP_PORT 5000
 #define BUFLEN 256
 #define MAX_CONTENTS 100
+#define MAX_DATA_SIZE 100
+
+struct pdu{
+    char type;
+    char data[MAX_DATA_SIZE];
+};
 
 struct Content {
     char peerName[11];
@@ -152,7 +158,7 @@ void handleContentListing(int socket, struct sockaddr_in indexServerAddr) {
 void handleFileRequest(int serverSocket) {
     struct sockaddr_in clientAddress;
     socklen_t clientAddressLength = sizeof(clientAddress);
-    char buffer[MAX_BUFFER_SIZE];
+    char buffer[MAX_DATA_SIZE];
 
     printf("Waiting for client to send a request...\n");
 
@@ -179,7 +185,7 @@ void handleFileRequest(int serverSocket) {
         // Handle content listing
         handleContentListing(serverSocket, clientAddress);
         return;
-    } else if (request_pdu.type == 'D') {
+    } /*else if (request_pdu.type == 'D') {
         printf("Received download request for file: %s\n", request_pdu.data);
         // Handle file transfer
         handleFileTransfer(serverSocket, clientAddress, request_pdu.data);
@@ -189,7 +195,7 @@ void handleFileRequest(int serverSocket) {
         // Respond with an error PDU for malformed requests
         sendErrorPDU(serverSocket, clientAddress, "Malformed PDU");
         return;
-    }
+    }*/
 }
 
 int main(int argc, char *argv[]) {
