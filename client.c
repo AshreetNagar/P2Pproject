@@ -331,6 +331,7 @@ void handleUserInput(char option, int serverSocket){
             contentDeregistration.type = 'T';
             write(serverSocket, &contentDeregistration, sizeof(contentDeregistration));
             struct PDU contentDeregistrationResponse;
+            
             char DeregistrationBuffer[101];
             int deregistration = read(serverSocket, DeregistrationBuffer, sizeof(DeregistrationBuffer)); //Should return peer and address to retrieve content
             contentDeregistrationResponse.type = DeregistrationBuffer[0];
