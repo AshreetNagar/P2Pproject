@@ -162,7 +162,28 @@ def handleDeregisterContent(peer, content):
         print("Content successfully deregistered")
     else:
         print("Error")
-    
+
+def handleQuit(peer):
+    ##Deregistration PDU is initialized with peer name for content deregistration
+    contentDeregistration = PDU()
+    contentDeregistration.type = 'Q'
+    peerLength = len(peer)
+    contentDeregistration.data[0:peerLength] = peer
+    print(contentDeregistration.data)
+    contentDeregistrationString = contentDeregistration.type + "".join([char for char in contentDeregistration.data if char is not None])
+    indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    indexServerSocket.sendto(contentDeregistrationString.encode(), ("127.0.0.1", 3000))
+
+    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE) ##Client receives incoming data from the index server
+
+    contentDeregistrationResponse = PDU()
+    contentDeregistrationResponse.type = data.decode()
+
+    ##A response PDU is initialized to handle and parse data sent by the index server
+    if contentDeregistrationResponse.type == 'A':
+        print("User successfully deregistered")
+    else:
+        print("Error")
 
 def handleUserInput(option): ##Handles user input
     if(option == "1"): ##Calls content registration function
@@ -179,13 +200,16 @@ def handleUserInput(option): ##Handles user input
         peer = str(input("Please enter your name: "))
         content = str(input("Please enter the content you would like to deregister: "))
         handleDeregisterContent(peer, content)
+    if(option == '5'): ##Calls user quit function
+        peer = str(input("Please enter your name: "))
+        handleQuit(peer)
 
 # if __name__ == "__main__":
 def main():
         run = 1
         while run:
             inputsockets = [sys.stdin] + sockets ##Creates an array with user input and the created TCP sockets
-            print("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n") ##Prompts the user for input
+            print("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n5.Quit\n") ##Prompts the user for input
             print("Please choose one of the above: ")
             readable, _, _ = select.select(inputsockets, [], []) 
             print("Select passed")

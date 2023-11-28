@@ -29,7 +29,8 @@ def registerContent(client_socket, data, addr):
     peers = ["".join(char) for char in peernames if char is not None]
 
     if filename in files and peer in peers:
-            contentRegistrationResponse.type = 'E'    
+        if files.index(filename) == peers.index(peer):
+            contentRegistrationResponse.type = 'E'
     else:
     # Find the first available slot for the new peer
         for i in range(current_peers, max_peers):
@@ -131,6 +132,33 @@ def DeregisterContent(client_socket, data, addr):
 
     client_socket.sendto(contentDeregistration.type.encode(), addr)
     print("Response sent")
+
+def Quit(client_socket, data, addr):
+    peer = data[0]
+    contentDeregistration = PDU()
+
+    print(peernames)
+    print(filenames)
+    
+    # for name in peernames:
+    names = ["".join(name) for name in peernames if name]
+
+    print(names)
+    print(names.index(peer))
+
+    contentDeregistration.type = 'E'
+
+    for name in names:
+        if name == peer:
+            del filenames[names.index(name)]
+            contentDeregistration.type = 'A'
+    del peernames[names.index(peer)]
+
+    print(peernames)
+    print(filenames)
+
+    client_socket.sendto(contentDeregistration.type.encode(), addr)
+    print("Response sent")
     
 def handleFileRequest(client_socket):
     try:
@@ -156,6 +184,9 @@ def handleFileRequest(client_socket):
         if Response.type == 'T':
             print(f"Received content deregistration request for: {data}")
             DeregisterContent(client_socket, parts, addr)
+        if Response.type == 'Q':
+            print(f"Received user quit request for: {data}")
+            Quit(client_socket, parts, addr)
     except Exception as e:
         print(f"Error receiving PDU: {e}")
 
