@@ -21,8 +21,6 @@ def registerContent(client_socket, data, addr):
     port = str(data[3])
     address = addr[0]
     # port = str(addr[1])
-    
-    # print(addr)
 
     global current_peers, max_peers
     contentRegistrationResponse = PDU()
@@ -44,19 +42,11 @@ def registerContent(client_socket, data, addr):
                 contentRegistrationResponse.type = 'A'
                 break
 
-    # Check if the peer list is full and resize if needed
-    # if current_peers == max_peers:
-    #     max_peers *= 2
-    #     peernames.extend([[] for _ in range(max_peers - current_peers)])
-    #     filenames.extend([[] for _ in range(max_peers - current_peers)])
-
     print(peernames)
     print(filenames)
     print(ips)
     print(ports)
 
-    # contentRegistrationResponse = PDU()
-    # contentRegistrationResponse.type = 'A'
     client_socket.sendto(contentRegistrationResponse.type.encode(), addr)
     print("Response sent")
 

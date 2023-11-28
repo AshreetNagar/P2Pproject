@@ -2,10 +2,8 @@ import socket
 import select
 import sys
 
-MAX_SOCKS = 10
 MAX_DATA_SIZE = 100
 
-# sockets = [None]*10
 sockets = []
 socketsIndex = 0
 filenames = []
@@ -15,7 +13,8 @@ class PDU:
         self.type = ''
         self.data = [None]*100
 
-def handleRegisterContent(peer, filename):
+def handleRegisterContent(peer, filename): ##Handles peer and content registration
+    ##Registration PDU is initialized with peer name and content name
     contentRegistration = PDU()
     contentRegistration.type = 'R'
     peerLength = len(peer)
@@ -27,8 +26,9 @@ def handleRegisterContent(peer, filename):
     file = open(filename, "rb")
     if not file:
         print("Error, file not found.")
-    filenames.append(filename)
+    filenames.append(filename) ##An array is used to keep track of uploaded content
 
+    ##A TCP socket is created for each new content a user uploads
     contentServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     reg_addr = ('', 0)
     contentServerSocket.bind(reg_addr)
@@ -37,25 +37,21 @@ def handleRegisterContent(peer, filename):
     port = str(contentServerSocket.getsockname()[1])
     portLength = len(port)
     contentServerSocket.listen(5)
-    ##Child process
-    # while True:
-    #     conn, addr = contentServerSocket.accept()
-    #     print(f"{addr} has connected")
-    #     filename = filenames[sockets.index(sock)]
-    #     print(filename)
 
+    ##Address and port are also added to Registration PDU
     contentRegistration.data[peerLength+filenameLength+2:peerLength+filenameLength+2+addressLength] = address
     contentRegistration.data[peerLength+filenameLength+2+addressLength] = '\n'
     contentRegistration.data[peerLength+filenameLength+addressLength+3:peerLength+filenameLength+addressLength+portLength+3] = port
     print(contentRegistration.data)
     contentRegistrationString = contentRegistration.type + "".join([char for char in contentRegistration.data if char is not None])
-    indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) ##A UDP socket is initialized for communication with the server
     indexServerSocket.sendto(contentRegistrationString.encode(), ("127.0.0.1", 3000))
     print("Data sent to index server")
     print(contentRegistrationString)
 
-    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE)
+    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE) ##Client receives incoming data from the index server
     
+    ##A response PDU is initialized to handle and parse data sent by the index server
     contentRegistrationResponse = PDU()
     contentRegistrationResponse.type = data.decode()
     print(f"Response type: {contentRegistrationResponse.type}")
@@ -63,23 +59,16 @@ def handleRegisterContent(peer, filename):
         print("Error, a peer with the same name already exists. Try again.")
         peer = str(input("Please enter your name (10 characters only): "))
         filename = str(input("Please enter the name of the file you would like to register (10 characters only): "))
-        # return handleRegisterContent(peer, filename)
         handleRegisterContent(peer, filename)
     else:
-        # print(f"Response type: {contentRegistrationResponse.type}")
         print(f"Content host server listening on port {port}")
 
-        sockets.append(contentServerSocket)
+        sockets.append(contentServerSocket) ##An array is used to keep track of the TCP sockets that have been created and are listening
         print(sockets)
 
-    # while True:
-    #     conn, addr = contentServerSocket.accept()
-    #     print(f"{addr} has connected")
-    #     filename = filenames[sockets.index(sock)]
-    #     print(filename)
 
-
-def handleContentDownload(peer, content):
+def handleContentDownload(peer, content): ##Handles content download
+    ##Search PDU is initialized with peer name and content name to check if requested content is available
     contentSearch = PDU()
     contentSearch.type = 'S'
     peerLength = len(peer)
@@ -94,8 +83,9 @@ def handleContentDownload(peer, content):
     indexServerSocket.sendto(contentSearchString.encode(), ("127.0.0.1", 3000))
     print("Data sent to index server")
 
-    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE)
+    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE) ##Client receives incoming data from the index server
     
+    ##A response PDU is initialized to handle and parse data sent by the index server
     contentSearchResponse = PDU()
     contentSearchResponse.type = data[0:1].decode()
     if contentSearchResponse.type == 'S':
@@ -106,9 +96,9 @@ def handleContentDownload(peer, content):
         print(f"Response type: {contentSearchResponse.type}")
         print(f"Content server address and port: {address}, {port}")
 
+        ##Download PDU is initialized to signal the index server to begin file download
         contentDownload = PDU()
         contentDownload.type = 'D'
-        # contentDownload.data.append(filename)
         contentClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         contentClientSocket.connect((address, int(port)))
         contentClientSocket.sendall(contentDownload.type.encode())
@@ -123,22 +113,23 @@ def handleContentDownload(peer, content):
                 print("File successfully downloaded")
                 break
             f.close()
-        # contentClientSocket.close()
-            handleRegisterContent(peer, content)
+            handleRegisterContent(peer, content) ##Registration function is called to make the user a content host of the downloaded content
         main()
     else:
         print("Content not found")
         print(f"Response type: {contentSearchResponse.type}")
 
 def handleContentListing():
+    ##Listing PDU is initialized to request index server for available content
     contentListing = PDU()
     contentListing.type = 'O'
     indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     indexServerSocket.sendto(contentListing.type.encode(), ("127.0.0.1", 3000))
     print("Data sent to index server")
  
-    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE)
-
+    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE) ##Client receives incoming data from the index server
+    
+    ##A response PDU is initialized to handle and parse data sent by the index server
     contentListingResponse = PDU()
     contentListingResponse.type = data[0:1].decode()
     contentListingResponse.data = data[1:].decode().split("X")
@@ -147,6 +138,7 @@ def handleContentListing():
         print(content)
 
 def handleDeregisterContent(peer, content):
+    ##Deregistration PDU is initialized with peer name and content name for content deregistration
     contentDeregistration = PDU()
     contentDeregistration.type = 'T'
     peerLength = len(peer)
@@ -160,8 +152,9 @@ def handleDeregisterContent(peer, content):
     indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     indexServerSocket.sendto(contentDeregistrationString.encode(), ("127.0.0.1", 3000))
 
-    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE)
+    data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE) ##Client receives incoming data from the index server
 
+    ##A response PDU is initialized to handle and parse data sent by the index server
     contentDeregistrationResponse = PDU()
     contentDeregistrationResponse.type = data.decode()
 
@@ -171,18 +164,18 @@ def handleDeregisterContent(peer, content):
         print("Error")
     
 
-def handleUserInput(option):
-    if(option == "1"):
+def handleUserInput(option): ##Handles user input
+    if(option == "1"): ##Calls content registration function
         peer = str(input("Please enter your name (10 characters only): "))
         filename = str(input("Please enter the name of the file you would like to register (10 characters only): "))
         handleRegisterContent(peer, filename)
-    if(option == '2'):
+    if(option == '2'): ##Calls content download function
         peer = str(input("Please enter your name: "))
         content = str(input("Please enter the content you would like to download: "))
         handleContentDownload(peer, content)
-    if(option == '3'):
+    if(option == '3'): ##Calls content listing function
         handleContentListing()
-    if(option == '4'):
+    if(option == '4'): ##Calls content deregistration function
         peer = str(input("Please enter your name: "))
         content = str(input("Please enter the content you would like to deregister: "))
         handleDeregisterContent(peer, content)
@@ -191,39 +184,37 @@ def handleUserInput(option):
 def main():
         run = 1
         while run:
-            inputsockets = [sys.stdin] + sockets
-            print("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n")
+            inputsockets = [sys.stdin] + sockets ##Creates an array with user input and the created TCP sockets
+            print("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n") ##Prompts the user for input
             print("Please choose one of the above: ")
-            readable, _, _ = select.select(inputsockets, [], [])
+            readable, _, _ = select.select(inputsockets, [], []) 
             print("Select passed")
-            # option = str(input("Please choose one of the above: "))
-            if sys.stdin in readable:
-                # print("1.Content Registration\n2.Content Download\n3.Content Listing\n4.Content Deregistration\n")
-                # option = str(input("Please choose one of the above: "))
+            if sys.stdin in readable: ##Handles user input
                 option = str(input())
                 handleUserInput(option=option)                
                 if option == 'exit':
                     run = 0
                     print("Program closed")
-            else:
+                    exit()
+            else: ##Handles TCP sockets
                 print(f"Got TCP sockets: {readable}")
                 for sock in sockets:
                     while True:
+                        ##Download PDU is initialized to receive signal from client for content download
                         contentDownload = PDU()
                         conn, addr = sock.accept()
                         contentDownload.type = conn.recv(1024).decode()
                         print(f"Response type: {contentDownload.type}")
                         print(f"Content client {addr} has connected")
-                        filename = filenames[sockets.index(sock)]
+                        filename = filenames[sockets.index(sock)] ##Retrieves the filename such that it has the same index as the current TCP socket in the sockets array
                         print(filename)
                         with open(filename, 'r') as f:
                             packet = f.read(1024)
                             while packet:
                                 conn.sendall(packet.encode())
                                 packet = f.read(1024)
-                                print(f"{f.read(1024)} sent")
                             f.close()
-                        print("File successfully sent")
+                        print("File successfully sent") ##Shows on completion that file has been sent
                         break
 
 main()
