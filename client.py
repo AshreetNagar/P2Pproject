@@ -196,7 +196,6 @@ def handleUserInput(option): ##Handles user input
         content = "All"
         handleDeregisterContent(peer, content)
 
-# if __name__ == "__main__":
 def main():
         run = 1
         while run:
@@ -249,6 +248,3 @@ main()
 #         if option == 'exit':
 #             run = 0
 #             print('Program closed')
-
-##Server
-##Does file need to be in directory, or could it be created if it is not there?
