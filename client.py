@@ -105,10 +105,12 @@ def handleContentDownload(peer, content): ##Handles content download
 
         ##Download PDU is initialized to signal the index server to begin file download
         contentDownload = PDU()
-        contentDownload.type = 'D'
+        contentDownload.type = 'D\n'
+        contentDownload.data = content
+        contentDownloadString = contentDownload.type + contentDownload.data
         contentClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         contentClientSocket.connect((address, int(port)))
-        contentClientSocket.sendall(contentDownload.type.encode())
+        contentClientSocket.sendall(contentDownloadString.encode())
         print(f"TCP connection established with content server {address}, {port}")
         print(f"Response type: {contentClientSocket.recv(1).decode()}")
         with open(f"{content}", "w") as f:
