@@ -247,3 +247,6 @@ main()
 #         if option == 'exit':
 #             run = 0
 #             print('Program closed')
+
+##Server
+##Does file need to be in directory, or could it be created if it is not there?

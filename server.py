@@ -212,3 +212,6 @@ if __name__ == "__main__":
 
 ##Error checks (Try, except) for peer and content (contentDeregistration)
 ##Fix Quit
+
+##Client
+##Ask if Deregister needs to be called recursively
