@@ -2,7 +2,7 @@ import socket
 
 MAX_DATA_SIZE = 100
 
-max_peers = 10
+max_peers = 20
 current_peers = 0
 peernames = [[] for _ in range(max_peers)]
 filenames = [[] for _ in range(max_peers)]
@@ -124,44 +124,49 @@ def DeregisterContent(client_socket, data, addr):
 
     contents = ["".join(file) for file in filenames if file]
     
-    #Checks if peer's content is available, and if so, it is deregistered
-    if content in contents:
-        contentIndex = names.index(peer)
-        del filenames[contentIndex]
+    if content == "All":
+        quitcontent = [i for i, x in enumerate(names) if x == peer] ##Retrieves the indexes with the peer's name
+        quitcontent.sort(reverse=True)
+        print(quitcontent)
+        for i in quitcontent:
+            if 0 <= i < len(filenames):
+                del filenames[i] #Deletes the file at the particular index
+            if 0 <= i < len(peernames): 
+                del peernames[i] #Deletes the peer at the particular index
+        contentDeregistration.data = "User successfully deregistered"
         contentDeregistration.type = 'A'
-    else:
-        contentDeregistration.type = 'E'
-
-    print(peernames)
-    print(filenames)
-
-    client_socket.sendto(contentDeregistration.type.encode(), addr) ##Sends content deregistration response back to peer
-    print("Response sent")
-
-def Quit(client_socket, data, addr):
-    peer = data[0]
-    contentDeregistration = PDU()
-
-    print(peernames)
-    print(filenames)
+        contentDeregistrationString = contentDeregistration.type + contentDeregistration.data
     
-    names = ["".join(name) for name in peernames if name]
+    else:
+        nameindex = [i for i, x in enumerate(names) if x == peer]
+        fileindex = [i for i, x in enumerate(contents) if x == content]
 
-    print(names)
-    print(names.index(peer))
-
-    contentDeregistration.type = 'E'
-
-    for name in names:
-        if name == peer:
-            del filenames[names.index(name)]
+        nameindex, fileindex = set(nameindex), set(fileindex)
+        print(nameindex)
+        print(fileindex)
+        contentIndex = list(nameindex & fileindex)[0]
+        #Checks if peer's content is available, and if so, it is deregistered
+        if content in contents:
+            del filenames[contentIndex]
+            del peernames[contentIndex]
             contentDeregistration.type = 'A'
-    del peernames[names.index(peer)]
+            contentDeregistrationString = contentDeregistration.type
+        elif content not in contents:
+            contentDeregistration.data = "Error, content is not registered"
+            contentDeregistration.type = 'E'
+            contentDeregistrationString = contentDeregistration.type + contentDeregistration.data
+        elif peer not in names:
+            contentDeregistration.data = "Error, peer is not registered"
+            contentDeregistration.type = 'E'
+            contentDeregistrationString = contentDeregistration.type + contentDeregistration.data
+        else:
+            contentDeregistration.type = 'E'
+            contentDeregistrationString = contentDeregistration.type
 
     print(peernames)
     print(filenames)
 
-    client_socket.sendto(contentDeregistration.type.encode(), addr)
+    client_socket.sendto(contentDeregistrationString.encode(), addr) ##Sends content deregistration response back to peer
     print("Response sent")
     
 def handleFileRequest(client_socket):
@@ -187,9 +192,6 @@ def handleFileRequest(client_socket):
         if Response.type == 'T': ##Handles request for content deregistration
             print(f"Received content deregistration request for: {data}")
             DeregisterContent(client_socket, parts, addr)
-        if Response.type == 'Q': ##Handles request for user deregistration
-            print(f"Received user quit request for: {data}")
-            Quit(client_socket, parts, addr)
     except Exception as e:
         print(f"Error receiving PDU: {e}")
 
