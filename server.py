@@ -8,6 +8,7 @@ peernames = [[] for _ in range(max_peers)]
 filenames = [[] for _ in range(max_peers)]
 ips = [[] for _ in range(max_peers)]
 ports = [[] for _ in range(max_peers)]
+downloadRequests = [0 for _ in range(max_peers)]
 
 class PDU:
     def __init__(self):
@@ -23,11 +24,12 @@ def registerContent(client_socket, data, addr):
     # port = str(addr[1])
 
     global current_peers, max_peers
-    contentRegistrationResponse = PDU()
+    contentRegistrationResponse = PDU() ##A registration PDU is initialized to send info once content registration is complete
 
     files = ["".join(char) for char in filenames if char is not None]
     peers = ["".join(char) for char in peernames if char is not None]
 
+    ##Sends an error if there is a peer already registered with the same name and content
     if filename in files and peer in peers:
         if files.index(filename) == peers.index(peer):
             contentRegistrationResponse.type = 'E'
@@ -48,7 +50,7 @@ def registerContent(client_socket, data, addr):
     print(ips)
     print(ports)
 
-    client_socket.sendto(contentRegistrationResponse.type.encode(), addr)
+    client_socket.sendto(contentRegistrationResponse.type.encode(), addr) ##Sends content registration response back to peer
     print("Response sent")
 
 def contentDownload(client_socket, data, addr):
@@ -67,15 +69,21 @@ def contentDownload(client_socket, data, addr):
     for port in ports:
         portCat.append("".join(port))
 
-    contentSearchResponse = PDU()
+    contentSearchResponse = PDU() ##A search PDU is initialized to send info whether content is available or not
     contentSearchResponse.type = 'E'
     
+    ##Checks whether content is available
     if content in contentCat:
         print("Content found")
         contentSearchResponse.type = 'S'
-        index = contentCat.index(content)
-        host = addressCat[index]
-        port = portCat[index]
+        # index = contentCat.index(content)
+        indices = [i for i, x in enumerate(contentCat) if x == content] ##Load balancing is implemented here; Indices of content names are appended here
+        requests = [downloadRequests[i] for i in indices] ##Content download requests are appended here for each socket, showing how many downloads have taken place
+        index = requests.index(min(requests)) ##Retrieves the index with the least download requests
+        host = addressCat[index] ##Retrieves content host address
+        port = portCat[index] ##Retrieves content host port
+        downloadRequests[index] += 1 ## Increments content host download request by 1 
+        print(downloadRequests)
         contentSearchResponse.data.append(host)
         contentSearchResponse.data.append("\n")
         contentSearchResponse.data.append(port)
@@ -87,50 +95,47 @@ def contentDownload(client_socket, data, addr):
 
     print(contentSearchString)
         
-    client_socket.sendto(contentSearchString.encode(), addr)
+    client_socket.sendto(contentSearchString.encode(), addr) ##Sends content search response back to peer
     print("Response sent")
 
 def contentListing(client_socket, addr):
-    contentListing = PDU()
+    contentListing = PDU() ##A listing PDU is initialized to send content listing to peer
     contentListing.type = 'O'
     print(filenames)
     for file in filenames:
-        contentListing.data.append("".join(file))
+        contentListing.data.append("".join(file)) ##Content names are appended to PDU data portion
     contentListing.data = [file + "X" for file in contentListing.data if file]
     print(contentListing.data)
     contentListingString = contentListing.type + "".join([char for char in contentListing.data if char is not None])
     print(contentListingString)
 
-    client_socket.sendto(contentListingString.encode(), addr)
+    client_socket.sendto(contentListingString.encode(), addr) ##Sends content listing response back to peer
     print("Response sent")
 
 def DeregisterContent(client_socket, data, addr):
     peer = data[0]
     content = data[1]
-    contentDeregistration = PDU()
+    contentDeregistration = PDU() ##A Deregistration PDU is initialized to send info when deregistration is complete
 
     print(peernames)
     print(filenames)
     
-    # for name in peernames:
     names = ["".join(name) for name in peernames if name]
 
-    # for file in filenames:
     contents = ["".join(file) for file in filenames if file]
-
-    print(names.index(peer))
-    print(contents.index(content))
     
-    if content in contents and contents.index(content) == names.index(peer):
-        contentIndex = contents.index(content)
+    #Checks if peer's content is available, and if so, it is deregistered
+    if content in contents:
+        contentIndex = names.index(peer)
         del filenames[contentIndex]
         contentDeregistration.type = 'A'
     else:
         contentDeregistration.type = 'E'
 
+    print(peernames)
     print(filenames)
 
-    client_socket.sendto(contentDeregistration.type.encode(), addr)
+    client_socket.sendto(contentDeregistration.type.encode(), addr) ##Sends content deregistration response back to peer
     print("Response sent")
 
 def Quit(client_socket, data, addr):
@@ -140,7 +145,6 @@ def Quit(client_socket, data, addr):
     print(peernames)
     print(filenames)
     
-    # for name in peernames:
     names = ["".join(name) for name in peernames if name]
 
     print(names)
@@ -166,25 +170,24 @@ def handleFileRequest(client_socket):
         if not data:
             return
         
-        Response = PDU()
-        Response.type = data[0:1].decode()
-        Response.data = data[1:].decode()
-        parts = Response.data.split("\n")
+        Response = PDU() ##Response PDU is initialized to handle incoming data
+        Response.type = data[0:1].decode() ##Parses PDU type
+        Response.data = data[1:].decode() ##Parses PDU data
+        parts = Response.data.split("\n") ##Splits data by '\n'
         print(Response.type)
-        # print(parts)
 
-        if Response.type == 'R':
+        if Response.type == 'R': ##Handles request for content registration
             print(f"Received content registration request for: {data}")
             registerContent(client_socket, parts, addr)
-        if Response.type == 'S':
+        if Response.type == 'S': ##Handles request for content search and download
             print(f"Received content download request for: {data}")
             contentDownload(client_socket, parts, addr)
-        if Response.type == 'O':
+        if Response.type == 'O': ##Handles request for content listing
             contentListing(client_socket, addr)
-        if Response.type == 'T':
+        if Response.type == 'T': ##Handles request for content deregistration
             print(f"Received content deregistration request for: {data}")
             DeregisterContent(client_socket, parts, addr)
-        if Response.type == 'Q':
+        if Response.type == 'Q': ##Handles request for user deregistration
             print(f"Received user quit request for: {data}")
             Quit(client_socket, parts, addr)
     except Exception as e:
@@ -192,15 +195,18 @@ def handleFileRequest(client_socket):
 
 if __name__ == "__main__":
 
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) ##A UDP socket is initialized for communication with peers
     client_socket.bind(("127.0.0.1", 3000))
 
     print(f"Server listening on port 3000")
 
     try:
         while True:
-            handleFileRequest(client_socket)
+            handleFileRequest(client_socket) ##Peer requests are handled here
     except KeyboardInterrupt:
         print("Server is shutting down")
     finally:
         client_socket.close()
+
+##Error checks (Try, except) for peer and content (contentDeregistration)
+##Fix Quit

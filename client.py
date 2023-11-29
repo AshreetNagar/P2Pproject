@@ -226,7 +226,7 @@ def main():
                     while True:
                         ##Download PDU is initialized to receive signal from client for content download
                         contentDownload = PDU()
-                        conn, addr = sock.accept()
+                        conn, addr = sock.accept() ##Peer accepts connection from peer acting as content client
                         contentDownload.type = conn.recv(1024).decode()
                         print(f"Response type: {contentDownload.type}")
                         print(f"Content client {addr} has connected")
@@ -238,6 +238,7 @@ def main():
                                 conn.sendall(packet.encode())
                                 packet = f.read(1024)
                             f.close()
+                        conn.close()
                         print("File successfully sent") ##Shows on completion that file has been sent
                         break
 
