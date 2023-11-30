@@ -19,9 +19,9 @@ def handleRegisterContent(peer, filename): ##Handles peer and content registrati
     contentRegistration = PDU()
     contentRegistration.type = 'R'
     peerLength = len(peer)
-    contentRegistration.data[0:peerLength] = peer
-    contentRegistration.data[peerLength] = '\n'
-    filenameLength = len(filename)
+    contentRegistration.data[0:peerLength] = peer #could have been appended but i tried with a c approach with byte by byte
+    contentRegistration.data[peerLength] = '\n' #new line appended to split it to show that it is done
+    filenameLength = len(filename) 
     contentRegistration.data[peerLength+1:filenameLength] = filename
     contentRegistration.data[peerLength+filenameLength+1] = '\n'
     try:
@@ -36,21 +36,21 @@ def handleRegisterContent(peer, filename): ##Handles peer and content registrati
     filenames.append(filename) ##An array is used to keep track of uploaded content
 
     ##A TCP socket is created for each new content a user uploads
-    contentServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    reg_addr = ('', 0)
-    contentServerSocket.bind(reg_addr)
-    address = contentServerSocket.getsockname()[0]
+    contentServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #insitalize socket with IPv4 Address and as a tcp socket
+    reg_addr = ('', 0) #set address to any interface and set port to any port
+    contentServerSocket.bind(reg_addr) #socket is binded
+    address = contentServerSocket.getsockname()[0] #address is retrieved from itself
     addressLength = len(address)
-    port = str(contentServerSocket.getsockname()[1])
+    port = str(contentServerSocket.getsockname()[1]) #port is retreived from itself
     portLength = len(port)
-    contentServerSocket.listen(5)
+    contentServerSocket.listen(5) #checks for incoming connections
 
     ##Address and port are also added to Registration PDU
-    contentRegistration.data[peerLength+filenameLength+2:peerLength+filenameLength+2+addressLength] = address
-    contentRegistration.data[peerLength+filenameLength+2+addressLength] = '\n'
-    contentRegistration.data[peerLength+filenameLength+addressLength+3:peerLength+filenameLength+addressLength+portLength+3] = port
+    contentRegistration.data[peerLength+filenameLength+2:peerLength+filenameLength+2+addressLength] = address #address is appened to contentregistered data
+    contentRegistration.data[peerLength+filenameLength+2+addressLength] = '\n' 
+    contentRegistration.data[peerLength+filenameLength+addressLength+3:peerLength+filenameLength+addressLength+portLength+3] = port #port is appened to contentregister data
     print(contentRegistration.data)
-    contentRegistrationString = contentRegistration.type + "".join([char for char in contentRegistration.data if char is not None])
+    contentRegistrationString = contentRegistration.type + "".join([char for char in contentRegistration.data if char is not None]) #because it is byte by byte, all characters are joined as long as they are not none
     indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) ##A UDP socket is initialized for communication with the server
     indexServerSocket.sendto(contentRegistrationString.encode(), ("127.0.0.1", 3000))
     print("Data sent to index server")
@@ -142,7 +142,7 @@ def handleContentListing():
     ##A response PDU is initialized to handle and parse data sent by the index server
     contentListingResponse = PDU()
     contentListingResponse.type = data[0:1].decode()
-    contentListingResponse.data = data[1:].decode().split("X")
+    contentListingResponse.data = data[1:].decode().split("X") #splits by the x to list the contents so x is new line character
     print("Content List:")
     for content in contentListingResponse.data:
         print(content)
