@@ -209,9 +209,3 @@ if __name__ == "__main__":
         print("Server is shutting down")
     finally:
         client_socket.close()
-
-##Error checks (Try, except) for peer and content (contentDeregistration)
-##Fix Quit
-
-##Client
-##Ask if Deregister needs to be called recursively
