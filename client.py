@@ -213,7 +213,7 @@ def main():
                     exit()
             else: ##Handles TCP sockets
                 print(f"Got TCP sockets: {readable}")
-                for sock in sockets:
+                for sock in readable:
                     while True:
                         ##Download PDU is initialized to receive signal from client for content download
                         contentDownload = PDU()
@@ -225,7 +225,7 @@ def main():
                         print(f"Content name: {contentDownload.data}")
                         print(f"Content client {addr} has connected")
                         conn.sendall(b'C')
-                        filename = filenames[sockets.index(sock)] ##Retrieves the filename such that it has the same index as the current TCP socket in the sockets array
+                        filename = contentDownload.data ##Retrieves the filename from the contentDownload PDU sent by requesting client
                         with open(filename, 'r') as f:
                             packet = f.read(1024)
                             print(f"{packet.encode()} sent")
