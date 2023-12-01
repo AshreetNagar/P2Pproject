@@ -103,10 +103,10 @@ def contentListing(client_socket, addr):
     contentListing.type = 'O'
     print(filenames)
     for file in filenames:
-        contentListing.data.append("".join(file)) ##Content names are appended to PDU data portion
-    contentListing.data = [file + "X" for file in contentListing.data if file]
+        contentListing.data.append("".join(file)) ##Content names are appended to PDU data portion; "".join(file) is used to append filenames as they are stored by characters
+    contentListing.data = [file + "X" for file in contentListing.data if file] ##X is appended as a newline character in order for client to split contents into list on retrieval
     print(contentListing.data)
-    contentListingString = contentListing.type + "".join([char for char in contentListing.data if char is not None])
+    contentListingString = contentListing.type + "".join([char for char in contentListing.data if char is not None]) #PDU type and PDU data are appended together to send to client
     print(contentListingString)
 
     client_socket.sendto(contentListingString.encode(), addr) ##Sends content listing response back to peer
