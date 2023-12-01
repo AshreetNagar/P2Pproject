@@ -151,22 +151,22 @@ def handleDeregisterContent(peer, content):
     ##Deregistration PDU is initialized with peer name and content name for content deregistration
     contentDeregistration = PDU()
     contentDeregistration.type = 'T'
-    peerLength = len(peer)
-    contentDeregistration.data[0:peerLength] = peer
-    contentDeregistration.data[peerLength] = '\n'
+    peerLength = len(peer) 
+    contentDeregistration.data[0:peerLength] = peer #Appends peer to PDU data
+    contentDeregistration.data[peerLength] = '\n' #Adds newline character for index server to split
     filenameLength = len(content)
-    contentDeregistration.data[peerLength+1:filenameLength] = content
-    contentDeregistration.data[peerLength+filenameLength+1] = '\n'
+    contentDeregistration.data[peerLength+1:filenameLength] = content #Appends content to PDU data
+    contentDeregistration.data[peerLength+filenameLength+1] = '\n' #Adds newline character for index server to split
     print(contentDeregistration.data)
-    contentDeregistrationString = contentDeregistration.type + "".join([char for char in contentDeregistration.data if char is not None])
-    indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    indexServerSocket.sendto(contentDeregistrationString.encode(), ("127.0.0.1", 3000))
+    contentDeregistrationString = contentDeregistration.type + "".join([char for char in contentDeregistration.data if char is not None]) 
+    indexServerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) ##UDP socket for communication with the index server; AF_INET specifies the family the IP address belongs to, in this case, IPv4
+    indexServerSocket.sendto(contentDeregistrationString.encode(), ("127.0.0.1", 3000)) ##PDU is sent to the index server
 
     data, addr = indexServerSocket.recvfrom(MAX_DATA_SIZE) ##Client receives incoming data from the index server
 
     ##A response PDU is initialized to handle and parse data sent by the index server
     contentDeregistrationResponse = PDU()
-    contentDeregistrationResponse.type = data[0:1].decode()
+    contentDeregistrationResponse.type = data[0:1].decode() ##Parses the PDU type from the index server
 
     if contentDeregistrationResponse.type == 'A':
         print("Content successfully deregistered")

@@ -124,9 +124,9 @@ def DeregisterContent(client_socket, data, addr):
 
     contents = ["".join(file) for file in filenames if file]
     
-    if content == "All":
+    if content == "All": ##Quit
         quitcontent = [i for i, x in enumerate(names) if x == peer] ##Retrieves the indexes with the peer's name
-        quitcontent.sort(reverse=True)
+        quitcontent.sort(reverse=True) 
         print(quitcontent)
         for i in quitcontent:
             if 0 <= i < len(filenames):
@@ -137,7 +137,7 @@ def DeregisterContent(client_socket, data, addr):
         contentDeregistration.type = 'A'
         contentDeregistrationString = contentDeregistration.type + contentDeregistration.data
     
-    else:
+    else: ##Content Deregistration
         nameindex = [i for i, x in enumerate(names) if x == peer]
         fileindex = [i for i, x in enumerate(contents) if x == content]
 
@@ -171,7 +171,7 @@ def DeregisterContent(client_socket, data, addr):
     
 def handleFileRequest(client_socket):
     try:
-        data, addr = client_socket.recvfrom(MAX_DATA_SIZE)
+        data, addr = client_socket.recvfrom(MAX_DATA_SIZE) ##Data and addr variables are initialized to signal client is sending data
         if not data:
             return
         
